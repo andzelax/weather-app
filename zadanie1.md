@@ -1,6 +1,8 @@
 # you need to install to run app in express
 npm init -y
+# you need to install to run app in express
 npm install express axios
+# you need to install to run app in express
 npm install dotenv
 
 
