@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Aplikacja pogodowa</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<!-- Miejsce na elementy aplikacji generowane dynamicznie-->
+  <div id="app"></div>
+
+  <script>
+    //predefiniona lista
+    const cities = {
+        PL: ["Warsaw", "Kraków", "Gdańsk", "Wrocław"],
+        DE: ["Berlin", "Munich", "Hamburg", "Cologne"],
+        FR: ["Paris", "Lyon", "Marseille", "Nice"],
+        ES: ["Madrid", "Barcelona", "Valencia"],
+        IT: ["Rome", "Milan", "Naples"]
+    };
+
+
+    function createForm() {
+      //tworzenie konteneru formularza itd
+      const app = document.getElementById('app');
+      const container = document.createElement('div');
+      container.className = 'container py-5';
+
+      const card = document.createElement('div');
+      card.className = 'card shadow-sm mx-auto';
+      card.style.maxWidth = '500px';
+
+      const cardBody = document.createElement('div');
+      cardBody.className = 'card-body';
+
+      const title = document.createElement('h1');
+      title.className = 'card-title text-center mb-4';
+      title.textContent = 'Sprawdź pogodę';
+
+      const form = document.createElement('form');
+      form.id = 'weatherForm';
+
+      // sekcja wyboru kraju
+      const countryGroup = document.createElement('div');
+      countryGroup.className = 'mb-3';
+      const countryLabel = document.createElement('label');
+      countryLabel.setAttribute('for', 'country');
+      countryLabel.className = 'form-label';
+      countryLabel.textContent = 'Kraj:';
+      const countrySelect = document.createElement('select');
+      countrySelect.id = 'country';
+      countrySelect.className = 'form-select';
+      countrySelect.innerHTML = `
+        <option value="PL">Polska</option>
+        <option value="DE">Niemcy</option>
+        <option value="FR">Francja</option>
+        <option value="ES">Hiszpania</option>
+        <option value="IT">Włochy</option>
+        `;
+
+      countryGroup.appendChild(countryLabel);
+      countryGroup.appendChild(countrySelect);
+
+      // sekcja wyboru miasta
+      const cityGroup = document.createElement('div');
+      cityGroup.className = 'mb-3';
+      const cityLabel = document.createElement('label');
+      cityLabel.setAttribute('for', 'city');
+      cityLabel.className = 'form-label';
+      cityLabel.textContent = 'Miasto:';
+      const citySelect = document.createElement('select');
+      citySelect.id = 'city';
+      citySelect.className = 'form-select';
+      cityGroup.appendChild(cityLabel);
+      cityGroup.appendChild(citySelect);
+
+      // button
+      const buttonGroup = document.createElement('div');
+      buttonGroup.className = 'mb-3';
+      const button = document.createElement('button');
+      button.type = 'submit';
+      button.className = 'btn btn-primary w-100';
+      button.textContent = 'Pokaż pogodę';
+      buttonGroup.appendChild(button);
+
+      // dodanie utworzonych sekcji do forma
+      form.appendChild(countryGroup);
+      form.appendChild(cityGroup);
+      form.appendChild(buttonGroup);
+
+      cardBody.appendChild(title);
+      cardBody.appendChild(form);
+      card.appendChild(cardBody);
+      container.appendChild(card);
+
+      const resultDiv = document.createElement('div');//wyniki
+      resultDiv.id = 'result';
+      resultDiv.className = 'mt-4';
+      container.appendChild(resultDiv);
+
+      app.appendChild(container);
+
+      return { countrySelect, citySelect, form, resultDiv };
+    }
+
+    //aktualizacja listy miast w zaleznosci od wybranego kraju
+    function updateCityOptions(country, citySelect) {
+      citySelect.innerHTML = '';
+      cities[country].forEach(city => {
+        const option = document.createElement('option');
+        option.value = city;
+        option.textContent = city;
+        citySelect.appendChild(option);
+      });
+    }
+
+
+    //obsługa wyslania forma i pobierania pogody
+    async function handleSubmit(e, country, city, resultDiv) {
+      e.preventDefault();
+      const res = await fetch('/weather', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ country, city })
+      });
+
+      const data = await res.json();//oczekiwanie na odp w formie json
+
+      if (data.main) {
+        resultDiv.innerHTML = `
+          <div class="alert alert-info">
+            <h4>${data.name}</h4>
+            <p><strong>Temperatura:</strong> ${data.main.temp} °C</p>
+            <p><strong>Opis:</strong> ${data.weather[0].description}</p>
+            <p><strong>Wilgotność:</strong> ${data.main.humidity}%</p>
+            <p><strong>Wiatr:</strong> ${data.wind.speed} m/s</p>
+          </div>
+        `;
+      } else {
+        resultDiv.innerHTML = '<div class="alert alert-danger">Nie udało się pobrać pogody.</div>';
+      }
+    }
+
+    //inicjalizacja aplikacji pogodowej
+    function init() {
+      const { countrySelect, citySelect, form, resultDiv } = createForm();
+      updateCityOptions('PL', citySelect);//domyslnie ustawiona polska
+
+      countrySelect.addEventListener('change', () => {
+        updateCityOptions(countrySelect.value, citySelect);
+      });
+
+      form.addEventListener('submit', (e) => {
+        const country = countrySelect.value;
+        const city = citySelect.value;
+        handleSubmit(e, country, city, resultDiv);//przeslanie danych na backend
+      });
+    }
+
+    init();
+  </script>
+
+</body>
+</html>
