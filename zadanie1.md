@@ -1,3 +1,9 @@
+# you need to install to run app in express
+npm init -y
+npm install express axios
+npm install dotenv
+
+
 # build image
 docker build -t weather-app .
 
@@ -12,3 +18,4 @@ docker logs -f weather-app-container
 
 # check layers
 docker history weather-app
+
